@@ -1,0 +1,307 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  MENTION
+  BOOKMARK
+  REPLY
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  username     String    @unique
+  passwordHash String
+  role         Role      @default(USER)
+  isVerified   Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  profile       Profile?
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  bookmarks     Bookmark[]
+  followers     Follow[]       @relation("UserFollowers")
+  following     Follow[]       @relation("UserFollowing")
+  notifications Notification[] @relation("NotificationRecipient")
+  triggered     Notification[] @relation("NotificationTrigger")
+  refreshTokens RefreshToken[]
+  viewHistory   ViewHistory[]
+  analytics     PostAnalytic[]
+
+  @@index([email])
+  @@index([username])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  displayName String
+  bio         String?
+  avatarUrl   String?
+  coverUrl    String?
+  website     String?
+  location    String?
+  twitterUrl  String?
+  githubUrl   String?
+  linkedinUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  userAgent String?
+  ipAddress String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt]) // FIX M-12: faster expired token cleanup queries
+  @@map("refresh_tokens")
+}
+
+model Post {
+  id              String     @id @default(uuid())
+  authorId        String
+  title           String
+  slug            String     @unique
+  excerpt         String?
+  content         String
+  contentJson     Json?
+  coverImage      String?
+  status          PostStatus @default(DRAFT)
+  publishedAt     DateTime?
+  scheduledAt     DateTime?
+  readingTime     Int        @default(0)
+  viewCount       Int        @default(0)
+  likeCount       Int        @default(0)
+  commentCount    Int        @default(0)
+  bookmarkCount   Int        @default(0)
+  metaTitle       String?
+  metaDescription String?
+  canonicalUrl    String?
+  isFeatured      Boolean    @default(false)
+  allowComments   Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
+
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  tags        PostTag[]
+  comments    Comment[]
+  likes       Like[]
+  bookmarks   Bookmark[]
+  viewHistory ViewHistory[]
+  analytics   PostAnalytic[]
+
+  @@index([authorId])
+  @@index([slug])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([createdAt])
+  // FIX M-5: composite indexes for common feed query patterns
+  @@index([status, deletedAt, publishedAt(sort: Desc)])
+  @@index([authorId, status, deletedAt])
+  @@map("posts")
+}
+
+model Tag {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  color       String?
+  postCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  posts PostTag[]
+
+  @@index([slug])
+  @@map("tags")
+}
+
+model PostTag {
+  id     String @id @default(uuid())
+  postId String
+  tagId  String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, tagId])
+  @@index([postId])
+  @@index([tagId])
+  @@map("post_tags")
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  postId    String
+  authorId  String
+  parentId  String?
+  content   String
+  isEdited  Boolean   @default(false)
+  likeCount Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentReplies")
+  likes   Like[]
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String?
+  commentId String?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@index([userId])
+  @@index([postId])
+  @@index([commentId])
+  @@map("likes")
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@map("bookmarks")
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  recipientId String
+  triggeredBy String
+  type        NotificationType
+  title       String
+  message     String
+  resourceId  String?
+  resourceUrl String?
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  recipient User @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  trigger   User @relation("NotificationTrigger", fields: [triggeredBy], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model ViewHistory {
+  id       String   @id @default(uuid())
+  userId   String
+  postId   String
+  viewedAt DateTime @default(now())
+  duration Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // FIX H-1: unique constraint so upsert({ where: { userId_postId: ... } }) works correctly
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@index([viewedAt])
+  @@map("view_history")
+}
+
+model PostAnalytic {
+  id          String   @id @default(uuid())
+  postId      String
+  authorId    String
+  date        DateTime @db.Date
+  views       Int      @default(0)
+  reads       Int      @default(0)
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  bookmarks   Int      @default(0)
+  avgReadTime Int      @default(0)
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, date])
+  @@index([postId])
+  @@index([authorId])
+  @@index([date])
+  @@map("post_analytics")
+}
