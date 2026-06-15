@@ -1,0 +1,145 @@
+name: penwave
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: penwave-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/proxy_params:/etc/nginx/proxy_params:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - penwave_net
+    labels:
+      logging: "promtail"
+      service: "nginx"
+
+  frontend:
+    image: ${DOCKERHUB_USERNAME}/penwave-frontend:${IMAGE_TAG}
+    container_name: penwave-frontend
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 15s
+      timeout: 5s
+      start_period: 45s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - penwave_net
+    labels:
+      logging: "promtail"
+      service: "frontend"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+
+  backend:
+    image: ${DOCKERHUB_USERNAME}/penwave-backend:${IMAGE_TAG}
+    container_name: penwave-backend
+    env_file: .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - penwave_net
+    labels:
+      logging: "promtail"
+      service: "backend"
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: penwave-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+      - ./monitoring/prometheus/metrics_secret:/etc/prometheus/metrics_secret:ro
+    restart: unless-stopped
+    port:
+      - "127.0.0.1:9090:9090"
+    networks:
+      - penwave_net
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: penwave-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://grafana.${DOMAIN:-penwave.ddns.net}
+      - GF_LOG_MODE=console
+      - GF_LOG_LEVEL=warn
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    port: 
+      - "127.0.0.1:3000:3000"
+    networks:
+      - penwave_net
+
+  loki:
+    image: grafana/loki:3.2.0
+    container_name: penwave-loki
+    command: -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./monitoring/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    restart: unless-stopped
+    networks:
+      - penwave_net
+
+  promtail:
+    image: grafana/promtail:3.2.0
+    container_name: penwave-promtail
+    user: root
+    command: -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - ./monitoring/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nginx_logs:/var/log/nginx:ro
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - penwave_net
+
+networks:
+  penwave_net:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  nginx_logs:
