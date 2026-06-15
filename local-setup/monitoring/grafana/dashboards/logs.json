@@ -1,0 +1,66 @@
+{
+  "title": "Penwave — Logs",
+  "uid": "penwave-logs",
+  "tags": ["penwave", "logs"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log Volume by Level",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (level) (rate({container=\"penwave-backend\"}[1m]))",
+          "legendFormat": "{{level}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Error Logs",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{container=\"penwave-backend\"} | json | level=\"error\"",
+          "legendFormat": ""
+        }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending" }
+    },
+    {
+      "id": 3,
+      "title": "All Backend Logs",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 18 },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{container=\"penwave-backend\"}",
+          "legendFormat": ""
+        }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending" }
+    },
+    {
+      "id": 4,
+      "title": "Nginx Access Logs",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 30 },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{container=\"penwave-nginx\"}",
+          "legendFormat": ""
+        }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending" }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" }
+}

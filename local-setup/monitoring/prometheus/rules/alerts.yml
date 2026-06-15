@@ -1,0 +1,158 @@
+groups:
+  - name: penwave.backend
+    interval: 30s
+    rules:
+      - alert: BackendDown
+        expr: up{job="penwave-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Penwave backend is down"
+          description: "Backend has been unreachable for 1 minute"
+
+      - alert: HighErrorRate
+        expr: |
+          rate(http_requests_total{status=~"5.."}[5m]) /
+          rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate"
+          description: "5xx error rate is {{ $value | humanizePercentage }} over last 5m"
+
+      - alert: CriticalErrorRate
+        expr: |
+          rate(http_requests_total{status=~"5.."}[5m]) /
+          rate(http_requests_total[5m]) > 0.20
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical HTTP error rate"
+          description: "5xx error rate is {{ $value | humanizePercentage }} — service may be degraded"
+
+      - alert: HighP95Latency
+        expr: |
+          histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API P95 latency"
+          description: "P95 latency is {{ $value | humanizeDuration }}"
+
+      - alert: HighP99Latency
+        expr: |
+          histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical API P99 latency"
+          description: "P99 latency is {{ $value | humanizeDuration }} — tail latency degraded"
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="penwave-backend"} > 500 * 1024 * 1024
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backend high memory usage"
+          description: "RSS memory is {{ $value | humanize1024 }}B"
+
+      - alert: ErrorSpike
+        # Fires when the error rate triples compared to the previous hour
+        expr: |
+          rate(http_requests_total{status=~"5.."}[5m])
+          > 3 * rate(http_requests_total{status=~"5.."}[1h] offset 1h)
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Error rate spike detected"
+          description: "5xx rate is 3x higher than baseline from 1h ago"
+
+      - alert: AuthFailureSpike
+        expr: |
+          rate(http_requests_total{route=~".*/auth/.*", status="401"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High auth failure rate"
+          description: "More than 10 auth failures/sec — possible brute force"
+
+  - name: penwave.database
+    rules:
+      - alert: PostgresDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "Postgres exporter unreachable for 1 minute"
+
+      - alert: PostgresHighConnections
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL high connection count"
+          description: "{{ $value }} active connections — pool exhaustion risk"
+
+  - name: penwave.redis
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis exporter unreachable for 1 minute"
+
+      - alert: RedisHighMemory
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory above 85%"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+  - name: penwave.infrastructure
+    rules:
+      - alert: DiskUsageHigh
+        expr: |
+          (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"})
+          / node_filesystem_size_bytes{mountpoint="/"} > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk usage above 85%"
+          description: "Root filesystem is {{ $value | humanizePercentage }} full"
+
+      - alert: DiskUsageCritical
+        expr: |
+          (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"})
+          / node_filesystem_size_bytes{mountpoint="/"} > 0.95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk usage above 95% — service at risk"
+          description: "Root filesystem is {{ $value | humanizePercentage }} full"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU usage above 90%"
+          description: "CPU has been above 90% for 10 minutes on {{ $labels.instance }}"

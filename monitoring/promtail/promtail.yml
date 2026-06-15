@@ -1,0 +1,42 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: docker
+          __path__: /var/lib/docker/containers/*/*-json.log
+    pipeline_stages:
+      # Stage 1: parse Docker's outer JSON wrapper
+      - json:
+          expressions:
+            log: log
+            stream: stream
+            container_time: time
+      # Stage 2: parse the inner Winston JSON string
+      - json:
+          expressions:
+            level: level
+            message: message
+            service: service
+            path: path
+            method: method
+          source: log
+      # Stage 3: set labels from extracted fields
+      - labels:
+          level:
+          service:
+          stream:
+      # Stage 4: use the inner message as the log line
+      - output:
+          source: message

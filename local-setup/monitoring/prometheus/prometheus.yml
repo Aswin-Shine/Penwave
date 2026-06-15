@@ -1,0 +1,59 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'production'
+    project: 'penwave'
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+scrape_configs:
+  # ── Penwave Backend ───────────────────────────────────
+  - job_name: 'penwave-backend'
+    static_configs:
+      - targets: ['backend:4000']
+        labels:
+          service: 'backend'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    # Bearer token matches METRICS_SECRET in backend .env.
+    # Set via environment variable — do NOT hardcode the value here.
+    # In docker-compose: pass METRICS_SECRET as an env var and reference it below,
+    # or mount a secrets file and use bearer_token_file instead.
+    authorization:
+      credentials_file: /etc/prometheus/metrics_secret
+    # Alternative if using a file mount:
+    # bearer_token_file: /etc/prometheus/metrics_secret
+
+  # ── Node Exporter (if added later) ───────────────────
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+
+  # ── PostgreSQL Exporter (if added later) ─────────────
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+  # ── Redis Exporter (if added later) ──────────────────
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+
+  # ── Prometheus self-monitoring ────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ── Nginx ─────────────────────────────────────────────
+  # Requires nginx-prometheus-exporter or VTS module
+  # - job_name: 'nginx'
+  #   static_configs:
+  #     - targets: ['nginx:8080']]
+  #   metrics_path: '/nginx_status'

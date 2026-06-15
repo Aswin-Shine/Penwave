@@ -1,0 +1,90 @@
+{
+  "title": "Penwave — Infrastructure",
+  "uid": "penwave-infra",
+  "tags": ["penwave", "infrastructure"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Process Memory (RSS)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "nodejs_process_resident_memory_bytes",
+          "legendFormat": "RSS"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "nodejs_nodejs_heap_size_used_bytes",
+          "legendFormat": "Heap Used"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "nodejs_nodejs_heap_size_total_bytes",
+          "legendFormat": "Heap Total"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 2,
+      "title": "CPU Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(nodejs_process_cpu_seconds_total[1m]) * 100",
+          "legendFormat": "CPU %"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" } }
+    },
+    {
+      "id": 3,
+      "title": "Node.js GC Duration",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(nodejs_nodejs_gc_duration_seconds_sum[5m])",
+          "legendFormat": "GC time/s"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 4,
+      "title": "Open File Descriptors",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "nodejs_process_open_fds",
+          "legendFormat": "Open FDs"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Process Uptime",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "time() - nodejs_process_start_time_seconds",
+          "legendFormat": "Uptime"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "dtdurations" } }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" }
+}
