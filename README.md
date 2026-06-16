@@ -479,22 +479,6 @@ Prometheus: `http://localhost:9090`
 
 ---
 
-## Contributing
-
-Contributions are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
-
-**Before contributing:**
-
-- Open an issue to discuss significant changes before implementation
-- Ensure all existing type checks and lints pass
-- Follow the commit convention described above
-- Add or update tests for any changed behavior
-- Keep PRs focused — one concern per PR
-
-For bug reports, use the GitHub issue tracker with the `bug` label. For feature requests, use the `enhancement` label.
-
----
-
 ## License
 
 This project is licensed under the [MIT License](./LICENSE).
@@ -510,13 +494,3 @@ This project is licensed under the [MIT License](./LICENSE).
 Maintained by [@your-handle](https://github.com/your-handle) · For support, open a [GitHub Discussion](https://github.com/your-org/penwave/discussions)
 
 </div>
-
-docker buildx build \
-  --builder penwave-builder \
-  --platform linux/amd64,linux/arm64 \
-  --file frontend/Dockerfile \
-  --build-arg NEXT_PUBLIC_API_URL=https://penwave.ddns.net/api \
-  --tag $DOCKERHUB_USERNAME/penwave-frontend:$IMAGE_TAG \
-  --tag $DOCKERHUB_USERNAME/penwave-frontend:latest \
-  --push \
-  ./frontend
