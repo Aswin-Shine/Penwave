@@ -50,4 +50,4 @@ redis_node_type = "cache.t3.micro"
 s3_media_bucket_name = "penwave-media-prod-aswin0407"
 
 # ── Misc ──────────────────────────────────────────────────────────────────────
-dockerhub_username = "your-dockerhub-username"
+dockerhub_username = "aswinshine"
