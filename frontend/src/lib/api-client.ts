@@ -1,6 +1,9 @@
 import type { ApiResponse, PaginationMeta } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+// Relative path — no domain baked into the client bundle at build time.
+// All /api/* requests are proxied by src/app/api/[...path]/route.ts
+// to the backend using the server-side BACKEND_URL env var.
+const API_URL = '/api';
 
 export class ApiError extends Error {
   constructor(

@@ -9,7 +9,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/posts/${slug}`,
+      `${process.env.BACKEND_URL ?? 'http://localhost:4000/api'}/posts/${slug}`,
       { next: { revalidate: 60 } }
     );
     if (!res.ok) return { title: 'Post not found' };

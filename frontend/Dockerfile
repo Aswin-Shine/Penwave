@@ -23,10 +23,6 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Build args for public env vars (injected at build time)
-ARG NEXT_PUBLIC_API_URL=http://localhost/api
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-
 RUN npm run build
 
 # ─────────────────────────────────────────────

@@ -30,7 +30,7 @@ services:
     container_name: penwave-frontend
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - BACKEND_URL=http://backend:4000/api
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/"]
       interval: 15s
@@ -80,10 +80,7 @@ services:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
-      - ./monitoring/prometheus/metrics_secret:/etc/prometheus/metrics_secret:ro
     restart: unless-stopped
-    port:
-      - "127.0.0.1:9090:9090"
     networks:
       - penwave_net
 
@@ -94,16 +91,16 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=https://grafana.${DOMAIN:-penwave.ddns.net}
+      - GF_SERVER_ROOT_URL=https://penwave.ddns.net/grafana/
       - GF_LOG_MODE=console
       - GF_LOG_LEVEL=warn
+    ports:
+      - "127.0.0.1:3000:3000"
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     restart: unless-stopped
-    port: 
-      - "127.0.0.1:3000:3000"
     networks:
       - penwave_net
 
