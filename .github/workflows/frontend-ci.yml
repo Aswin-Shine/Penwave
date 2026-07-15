@@ -67,7 +67,7 @@ jobs:
             aswinshine/penwave-frontend:latest
 
       - name: Trivy image scan (report all severities to Security tab)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         continue-on-error: true
         with:
           image-ref: aswinshine/penwave-frontend:${{ steps.vars.outputs.sha_short }}
@@ -77,13 +77,13 @@ jobs:
           ignore-unfixed: true
 
       - name: Upload Trivy results to Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy-image-results.sarif
 
       - name: Trivy image scan (gate on CRITICAL only)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: aswinshine/penwave-frontend:${{ steps.vars.outputs.sha_short }}
           format: table
