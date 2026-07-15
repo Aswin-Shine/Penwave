@@ -39,7 +39,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: "aswinshine/penwave-backend:latest"  # CI overwrites this tag on each push, see .github/workflows
+          image: "aswinshine/penwave-backend:2d92b84"  # CI overwrites this tag on each push, see .github/workflows
           command: ["npx", "prisma", "migrate", "deploy"]
           envFrom:
             - secretRef:
