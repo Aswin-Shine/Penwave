@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main (app source)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -92,7 +92,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Checkout kubernetes branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: kubernetes
           path: manifests
