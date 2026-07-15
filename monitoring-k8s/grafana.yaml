@@ -69,10 +69,7 @@ spec:
                 secretKeyRef:
                   name: grafana-admin
                   key: admin-password
-            # No subpath/subdomain routing configured -- your No-IP tier
-            # is single-hostname only (same reason Grafana was accessed
-            # via SSH tunnel in Phase 1/2). Access this the same way:
-            # kubectl port-forward svc/grafana -n monitoring 3000:3000
+      
           resources:
             requests:
               cpu: 100m
@@ -100,12 +97,6 @@ spec:
           configMap:
             name: grafana-dashboards
         - name: storage
-          # emptyDir: dashboards you build by hand in the UI will not
-          # survive a pod restart, let alone a cluster teardown. If you
-          # want dashboards to persist without an EBS-backed PVC, provision
-          # them as ConfigMap-mounted JSON under
-          # /etc/grafana/provisioning/dashboards instead of clicking them
-          # together in the UI.
           emptyDir: {}
 
 ---

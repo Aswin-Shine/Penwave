@@ -57,7 +57,7 @@ spec:
         config-checksum: "v1"
     spec:
       serviceAccountName: penwave-backend
-      automountServiceAccountToken: true
+      automountServiceAccountToken: true 
 
       securityContext:
         runAsNonRoot: true
@@ -81,11 +81,9 @@ spec:
             - configMapRef:
                 name: penwave-backend-config
             - secretRef:
-                name: penwave-backend-secrets # from ExternalSecret
+                name: penwave-backend-secrets 
             - secretRef:
-                name: penwave-backend-connection-strings # DATABASE_URL, REDIS_URL
-
-          
+                name: penwave-backend-connection-strings 
           livenessProbe:
             httpGet:
               path: /health
