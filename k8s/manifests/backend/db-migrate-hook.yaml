@@ -28,7 +28,19 @@ metadata:
   namespace: penwave
   annotations:
     argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    # BeforeHookCreation added: without it, a Job left behind by a FAILED
+    # previous sync (HookSucceeded only deletes on success, deliberately,
+    # so failed migrations stay inspectable) blocks every subsequent sync.
+    # Job's spec.template is immutable in the Kubernetes API -- ArgoCD
+    # can't patch an existing Job's pod spec, only delete-and-recreate.
+    # BeforeHookCreation tells it to do exactly that: delete whatever Job
+    # exists under this name right before creating the new one. You still
+    # get to inspect a failed Job's logs in the window between the
+    # failure and the NEXT sync attempt -- you lose it as soon as another
+    # sync runs, whether from a retry or a new CI push. That's the
+    # trade-off: still debuggable immediately after failure, no longer a
+    # permanent block on all future syncs.
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
 spec:
   backoffLimit: 2
   template:
