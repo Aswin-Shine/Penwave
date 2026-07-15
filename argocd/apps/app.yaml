@@ -1,0 +1,41 @@
+# One Application for the whole k8s/manifests tree, not split per-component.
+#
+# WHY CONSOLIDATED, NOT SEPARATE backend/frontend/platform APPS: namespace,
+# external-secrets (ClusterSecretStore + both ExternalSecrets), and
+# configmap/ are shared dependencies of BOTH backend and frontend. Splitting
+# into separate Applications means either duplicating those shared
+# manifests across multiple Applications (drift risk -- two copies to keep
+# in sync) or introducing Application-level sync-wave ordering across
+# multiple Applications (works in ArgoCD, but is a more complex mechanism
+# than necessary here). Since everything in this tree is tightly coupled --
+# same namespace, same shared config -- one Application with per-resource
+# sync-wave annotations (already added to backend/deployment.yaml and
+# frontend/deployment.yaml) is simpler to reason about and debug.
+#
+# Ordering: namespace/, external-secrets/, configmap/, and all the
+# NetworkPolicy/HPA/PDB/ServiceAccount/Service objects stay at the default
+# wave 0 -- none of them health-gate on anything. Only backend/deployment.yaml
+# and frontend/deployment.yaml carry an explicit wave "1", since those are
+# the only two resources whose envFrom actually depends on wave 0 finishing.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: penwave-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Aswin-Shine/Penwave.git
+    targetRevision: kubernetes
+    path: k8s/manifests
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: penwave
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -203,6 +203,8 @@ kind: Deployment
 metadata:
   name: prometheus
   namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   replicas: 1
   selector:
@@ -260,6 +262,8 @@ kind: Service
 metadata:
   name: prometheus
   namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   selector:
     app: prometheus

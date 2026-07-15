@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# NetworkPolicy: allow-db-migrate-egress
+#
+# GAP THIS CLOSES: db-migrate-hook.yaml's Job pod is labeled
+# app.kubernetes.io/name: penwave-db-migrate. The existing
+# allow-backend-egress policy only matches app.kubernetes.io/name:
+# penwave-backend -- a different label. Under default-deny-all, the
+# migration hook had NO matching egress rule and its connection to RDS
+# on 5432 would be blocked outright (if NetworkPolicy enforcement is
+# active on your CNI). This produces a plain connection timeout, not an
+# auth error -- a more confusing failure than what P1000 debugging
+# already covered, on a pod that never had this problem before
+# NetworkPolicies existed in this repo.
+#
+# Mirrors allow-backend-egress's DNS + Postgres rules, drops the Redis/443
+# rules the migration hook doesn't need.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-db-migrate-egress
+  namespace: penwave
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: penwave-db-migrate
+  policyTypes:
+    - Egress
+  egress:
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

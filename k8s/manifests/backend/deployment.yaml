@@ -38,6 +38,8 @@ kind: Deployment
 metadata:
   name: penwave-backend
   namespace: penwave
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
   labels:
     app.kubernetes.io/name: penwave-backend
     app.kubernetes.io/part-of: penwave
@@ -52,22 +54,14 @@ spec:
         app.kubernetes.io/name: penwave-backend
         app.kubernetes.io/part-of: penwave
       annotations:
-        # Forces a rolling restart when the ConfigMap/Secret content
-        # changes, even though the Deployment spec itself didn't change.
-        # Without this, pods keep running with STALE env vars after a
-        # `kubectl apply` to the ConfigMap, because Kubernetes does not
-        # restart pods automatically when a referenced ConfigMap/Secret
-        # changes — only the K8s API object updates, not the running
-        # container's environment. Update this value (or use a tool like
-        # Reloader/Stakater) whenever you change backend-configmap.yaml.
         config-checksum: "v1"
     spec:
       serviceAccountName: penwave-backend
-      automountServiceAccountToken: true # REQUIRED for IRSA — do not set to false
+      automountServiceAccountToken: true
 
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1001 # matches the "penwave" user created in backend/Dockerfile
+        runAsUser: 1001 
         runAsGroup: 1001
         fsGroup: 1001
         seccompProfile:
@@ -91,13 +85,7 @@ spec:
             - secretRef:
                 name: penwave-backend-connection-strings # DATABASE_URL, REDIS_URL
 
-          # Liveness: is the process alive? NO external dependency checks —
-          # checking DB/Redis here would cause Kubernetes to kill and
-          # restart a perfectly healthy backend pod just because RDS had a
-          # momentary network blip, creating a restart storm that makes a
-          # transient DB issue into a full application outage. This
-          # exact distinction is why backend/src/middleware/health.ts
-          # split /health and /ready into two separate handlers.
+          
           livenessProbe:
             httpGet:
               path: /health
@@ -107,12 +95,6 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
 
-          # Readiness: can this pod serve traffic right now? DOES check
-          # DB + Redis. If either is down, this pod is pulled from the
-          # Service's load-balancing rotation (no traffic sent to it) but
-          # is NOT restarted — exactly the right behavior when the
-          # problem is "RDS is temporarily unreachable", not "this pod is
-          # broken."
           readinessProbe:
             httpGet:
               path: /ready
@@ -137,10 +119,6 @@ spec:
               drop:
                 - ALL
 
-          # backend/Dockerfile's runtime stage has no writable dirs besides
-          # what Node.js itself needs at runtime (npm cache dir, tmp).
-          # Mirrors the read_only: true + tmpfs pattern already used in
-          # docker-compose.prod.yml for the same container.
           volumeMounts:
             - name: tmp
               mountPath: /tmp
@@ -150,4 +128,4 @@ spec:
           emptyDir:
             sizeLimit: 64Mi
 
-      terminationGracePeriodSeconds: 15 # backend/src/server.ts shuts down within 10s, +5s buffer
+      terminationGracePeriodSeconds: 15 
