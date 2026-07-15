@@ -69,7 +69,7 @@ spec:
 
       containers:
         - name: backend
-          image: "aswinshine/penwave-backend:cd7f758"
+          image: "aswinshine/penwave-backend:f54b6d0"
           imagePullPolicy: Always
 
           ports:
