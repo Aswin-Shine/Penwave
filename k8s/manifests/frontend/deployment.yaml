@@ -45,7 +45,7 @@ spec:
 
       containers:
         - name: frontend
-          image: "aswinshine/penwave-frontend:ebc1839"
+          image: "aswinshine/penwave-frontend:cd7f758"
           imagePullPolicy: Always
 
           ports:
