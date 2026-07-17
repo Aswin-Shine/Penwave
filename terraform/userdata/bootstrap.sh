@@ -175,7 +175,10 @@ docker compose up -d
 MY_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
 cat > /opt/penwave/scripts/obtain-cert.sh << 'CERTSCRIPT'
 #!/bin/bash
-DOMAIN="$${DOMAIN}"
+# DOMAIN and MY_IP are placeholders substituted below via sed, not shell
+# variables -- this script runs as a detached `nohup ... &` process and
+# does not inherit un-exported variables from the parent script's shell.
+DOMAIN="MY_DOMAIN_PLACEHOLDER"
 MY_IP="MY_IP_PLACEHOLDER"
 LOG="/var/log/certbot-background.log"
 echo "[$(date)] Starting background DNS poller for $DOMAIN (target IP: $MY_IP)" >> "$LOG"
@@ -206,7 +209,8 @@ done
 echo "[$(date)] WARNING: DNS did not propagate within 2 hours. Still on self-signed cert." >> "$LOG"
 echo "[$(date)] Re-run manually: certbot certonly --webroot -w /var/www/certbot -d $DOMAIN" >> "$LOG"
 CERTSCRIPT
-# Substitute real IP into the script
+# Substitute real domain and IP into the script
+sed -i "s/MY_DOMAIN_PLACEHOLDER/$${DOMAIN}/" /opt/penwave/scripts/obtain-cert.sh
 sed -i "s/MY_IP_PLACEHOLDER/$MY_IP/" /opt/penwave/scripts/obtain-cert.sh
 chmod +x /opt/penwave/scripts/obtain-cert.sh
 # Run detached — output goes to /var/log/certbot-background.log
@@ -227,10 +231,14 @@ sleep 15
 curl -sf http://localhost:4000/health && echo "Backend OK" || echo "WARNING: Backend not responding"
 curl -skf https://localhost/health    && echo "Nginx OK"   || echo "WARNING: Nginx not responding"
 # penwave-deploy helper
+# Manual/emergency use only. NOT called by the GitHub Actions pipeline --
+# deploy-production.yml does its own SSH deploy with Trivy/SonarCloud
+# gating and automatic rollback on failed health checks. This script skips
+# all of that, so don't reach for it out of habit; it deploys whatever tag
+# you give it immediately, unscanned and unverified.
 cat > /usr/local/bin/penwave-deploy << 'DEPLOY_EOF'
 #!/bin/bash
 # Usage: penwave-deploy <image-tag>
-# Called by GitHub Actions deploy job on every push to main.
 set -euo pipefail
 TAG=$${1:-latest}
 cd /opt/penwave
