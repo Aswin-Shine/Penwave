@@ -1,0 +1,145 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Backend CI. Lives on `main` (where backend/** actually lives and where
+# push events fire from). Builds, scans, pushes image, then updates the
+# manifest on the `kubernetes` branch of THIS SAME REPO.
+#
+# NO PAT NEEDED. Same-repo, different-branch: default GITHUB_TOKEN with
+# `contents: write` can push to any branch of the repo the workflow runs
+# in, including one it didn't check out by default.
+#
+# SCAN POLICY, DELIBERATE NOT DEFAULT:
+# - SonarCloud: continue-on-error true. No test suite exists yet, so the
+#   default quality gate (~80% coverage on new code) would fail on
+#   literally every push regardless of code quality. Report-only until
+#   there's a real coverage baseline worth gating on -- flip this once
+#   tests exist.
+# - Trivy: fails the job on CRITICAL only. HIGH/MEDIUM upload to GitHub's
+#   Security tab but don't block -- base images almost always carry a few
+#   of these, gating on them blocks the pipeline for reasons that have
+#   nothing to do with what you actually changed.
+# - Manifest bump (the step that actually triggers an ArgoCD deploy) only
+#   runs if Trivy passes. A failed scan leaves the image sitting in Docker
+#   Hub, tagged but unreferenced by any manifest -- never deployed.
+#
+# REQUIRED SECRETS: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, SONAR_TOKEN
+# (from SonarCloud, sonarcloud.io -- free for public repos, no server to
+# run). If this repo is private, self-hosted SonarQube is the real option
+# instead -- different setup, ask if that's the case.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+permissions:
+  contents: write
+  security-events: write   # required for Trivy's SARIF upload to the Security tab
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main (app source)
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # SonarCloud wants full history for accurate blame/new-code detection
+
+      - name: Set image tag
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: SonarCloud scan (report-only)
+        uses: SonarSource/sonarqube-scan-action@v8
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: backend
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./backend
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            aswinshine/penwave-backend:${{ steps.vars.outputs.sha_short }}
+            aswinshine/penwave-backend:latest
+
+      - name: Trivy image scan (report all severities to Security tab)
+        uses: aquasecurity/trivy-action@v0.36.0
+        continue-on-error: true
+        with:
+          image-ref: aswinshine/penwave-backend:${{ steps.vars.outputs.sha_short }}
+          format: sarif
+          output: trivy-image-results.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+          ignore-unfixed: true
+
+      - name: Upload Trivy results to Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-image-results.sarif
+
+      - name: Trivy image scan (gate on CRITICAL only)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: aswinshine/penwave-backend:${{ steps.vars.outputs.sha_short }}
+          format: table
+          severity: CRITICAL
+          exit-code: 1
+          ignore-unfixed: true
+
+      - name: Trivy IaC scan (Kubernetes manifests + Terraform)
+        uses: aquasecurity/trivy-action@v0.36.0
+        continue-on-error: true
+        with:
+          scan-type: config
+          scan-ref: .
+          format: sarif
+          output: trivy-iac-results.sarif
+          severity: CRITICAL,HIGH
+
+      - name: Upload IaC scan results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-iac-results.sarif
+          category: iac
+
+      - name: Checkout kubernetes branch
+        uses: actions/checkout@v7
+        with:
+          ref: kubernetes
+          path: manifests
+
+      - name: Update manifest with new image tag
+        run: |
+          sed -i "s|image: \"aswinshine/penwave-backend:.*\"|image: \"aswinshine/penwave-backend:${{ steps.vars.outputs.sha_short }}\"|" manifests/k8s/manifests/backend/deployment.yaml
+          sed -i "s|image: \"aswinshine/penwave-backend:.*\"|image: \"aswinshine/penwave-backend:${{ steps.vars.outputs.sha_short }}\"|" manifests/k8s/manifests/backend/db-migrate-hook.yaml
+
+      - name: Commit and push to kubernetes branch
+        working-directory: manifests
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/manifests/backend/deployment.yaml k8s/manifests/backend/db-migrate-hook.yaml
+          git diff --cached --quiet || git commit -m "ci: bump backend image to ${{ steps.vars.outputs.sha_short }} (from main@${{ github.sha }})"
+          git push origin kubernetes
