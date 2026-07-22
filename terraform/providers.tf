@@ -25,7 +25,7 @@ terraform {
   #
   # After bootstrapping: terraform init -migrate-state
   backend "s3" {
-    bucket       = "penwave-terraform-state"
+    bucket       = "penwave-terraform-state-v2"
     key          = "prod/terraform.tfstate"
     region       = "us-east-1"
     encrypt      = true
