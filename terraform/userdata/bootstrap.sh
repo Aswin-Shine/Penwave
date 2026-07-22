@@ -124,12 +124,20 @@ echo "Nginx configs downloaded and configured."
 # No-IP updater
 echo "[7b/9] Configuring No-IP auto-update..."
 mkdir -p /opt/noip
-cat > /opt/noip/update.sh << NOIP_EOF
+# Quoted delimiter: defers ALL expansion to when update.sh actually runs.
+# The previous unquoted version tried to expand $CURRENT_IP/$RESPONSE
+# immediately while WRITING this file -- those are update.sh's own local
+# variables, never defined in bootstrap's shell, so `set -u` killed the
+# entire bootstrap script right here on every single deploy.
+cat > /opt/noip/update.sh << 'NOIP_EOF'
 #!/bin/bash
 CURRENT_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-RESPONSE=$(curl -s -u "$${NOIP_USER}:$${NOIP_PASS}"   "https://dynupdate.no-ip.com/nic/update?hostname=$${DOMAIN}&myip=$${CURRENT_IP}")
+RESPONSE=$(curl -s -u "NOIP_USER_PLACEHOLDER:NOIP_PASS_PLACEHOLDER" "https://dynupdate.no-ip.com/nic/update?hostname=NOIP_DOMAIN_PLACEHOLDER&myip=$${CURRENT_IP}")
 echo "$(date): $RESPONSE (IP: $CURRENT_IP)" >> /var/log/noip.log
 NOIP_EOF
+sed -i "s/NOIP_USER_PLACEHOLDER/$${NOIP_USER}/" /opt/noip/update.sh
+sed -i "s/NOIP_PASS_PLACEHOLDER/$${NOIP_PASS}/" /opt/noip/update.sh
+sed -i "s/NOIP_DOMAIN_PLACEHOLDER/$${DOMAIN}/" /opt/noip/update.sh
 chmod +x /opt/noip/update.sh
 /opt/noip/update.sh
 mkdir -p /etc/cron.d
@@ -252,5 +260,6 @@ chmod +x /usr/local/bin/penwave-deploy
 echo "=== Penwave Bootstrap COMPLETE $(date) ==="
 echo "Elastic IP : $MY_IP"
 echo "App        : https://$${DOMAIN}"
-echo "Grafana    : https://grafana.$${DOMAIN}"
+echo "Grafana    : https://$${DOMAIN}/grafana/"
 echo "Logs       : /var/log/penwave-bootstrap.log"
+
