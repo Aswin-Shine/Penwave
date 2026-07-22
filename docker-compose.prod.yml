@@ -12,6 +12,7 @@ services:
       - ./nginx/proxy_params:/etc/nginx/proxy_params:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
       - nginx_logs:/var/log/nginx
     depends_on:
       frontend:
