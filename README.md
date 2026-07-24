@@ -1,6 +1,6 @@
 <div align="center">
 
-![Project Banner](./docs/assets/banner-placeholder.png)
+![Project Banner](./docs/assets/penwave-banner.png)
 
 # Penwave
 
@@ -150,7 +150,7 @@ Penwave is a full-stack blogging platform designed from first principles as a pr
 
 Penwave follows a cloud-native, layered deployment model. The frontend is a Next.js standalone container served behind Nginx. The backend is a stateless Express API that communicates with PostgreSQL for persistence and Redis for caching and rate limiting. Both write structured logs to stdout; Promtail collects and ships to Loki. Prometheus scrapes the `/metrics` endpoint every 15 seconds.
 
-![HLD Diagram](./docs/diagrams/hld-placeholder.png)
+![HLD Diagram](./docs/assets/hld-diagram.png)
 
 ### Component Interactions
 
@@ -183,7 +183,7 @@ Browser
 
 The backend is a modular monolith. Each domain (auth, posts, comments, likes, bookmarks, users, notifications, search, analytics, tags) is a self-contained module with its own clearly bounded layers.
 
-![LLD Diagram](./docs/diagrams/lld-placeholder.png)
+![LLD Diagram](./docs/assets/lld-diagram.png)
 
 ### Layer Responsibilities
 
@@ -230,7 +230,7 @@ Incoming Request
 
 Every push to `main` runs the full delivery pipeline. Pull requests targeting `main` or `develop` run the validation pipeline (no deployment).
 
-![CI/CD Pipeline](./docs/diagrams/cicd-placeholder.png)
+![CI/CD Pipeline](./docs/assets/)
 
 ### Pipeline Stages
 
@@ -268,7 +268,7 @@ Terraform validate                 →      Sync monitoring configs to EC2
 
 All AWS infrastructure is provisioned via Terraform. Environments (`dev`, `prod`) are separated by variable files with no shared state.
 
-![Infrastructure Diagram](./docs/diagrams/iac-placeholder.png)
+![Infrastructure Diagram](./docs/assets/tf-diagram.png)
 
 ### Principles
 
@@ -489,8 +489,5 @@ This project is licensed under the [MIT License](./LICENSE).
 
 **Penwave** · Built with precision
 
-[Documentation](./IMPLEMENTATION.md) · [Issues](https://github.com/your-org/penwave/issues) · [Discussions](https://github.com/your-org/penwave/discussions)
-
-Maintained by [@your-handle](https://github.com/your-handle) · For support, open a [GitHub Discussion](https://github.com/your-org/penwave/discussions)
-
+Maintained by [@Aswin-Shine](https://github.com/your-handle)
 </div>
