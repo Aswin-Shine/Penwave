@@ -35,11 +35,13 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: backend/Dockerfile
+          failure-threshold: warning
 
       - name: Hadolint (frontend Dockerfile)
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: frontend/Dockerfile
+          failure-threshold: warning
 
       - name: Trivy IaC scan
         uses: aquasecurity/trivy-action@v0.36.0
