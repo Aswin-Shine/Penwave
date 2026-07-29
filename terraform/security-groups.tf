@@ -24,7 +24,7 @@ resource "aws_security_group" "ec2" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # trivy:ignore-AWS-0107 -- var.ssh_allowed_cidr's real value lives in the
+  # trivy:ignore:AWS-0107 -- var.ssh_allowed_cidr's real value lives in the
   # gitignored prod.tfvars (never committed, not present in CI's scan
   # context), so Trivy can't evaluate it and flags the variable reference
   # defensively. IMPLEMENTATION.md's setup steps require this be set to a
@@ -38,7 +38,7 @@ resource "aws_security_group" "ec2" {
     cidr_blocks = [var.ssh_allowed_cidr]
   }
 
-  # trivy:ignore-AWS-0104 -- EC2 genuinely needs broad outbound internet
+  # trivy:ignore:AWS-0104 -- EC2 genuinely needs broad outbound internet
   # access: Docker Hub image pulls, dnf/apk package updates, Let's Encrypt's
   # ACME servers, No-IP's update API. None of these are a fixed, small set
   # of IPs that can be safely allowlisted without breaking on the next CDN
