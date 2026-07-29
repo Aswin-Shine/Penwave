@@ -19,6 +19,13 @@ resource "aws_s3_bucket_public_access_block" "media" {
 }
 
 # ── Encryption at rest ────────────────────────────────────
+# trivy:ignore-AWS-0132 -- SSE-S3 (AES256, AWS-managed keys) rather than
+# SSE-KMS (customer-managed keys). This is a genuine cost/complexity
+# tradeoff, not an operational necessity like the other three suppressions
+# in this repo -- SSE-KMS is a real, fairly small upgrade (add an
+# aws_kms_key resource, grant the EC2 role kms:Decrypt/GenerateDataKey,
+# reference the key ID here) if key rotation and access auditing matter for
+# this bucket's contents. Data is still encrypted at rest either way.
 resource "aws_s3_bucket_server_side_encryption_configuration" "media" {
   bucket = aws_s3_bucket.media.id
 

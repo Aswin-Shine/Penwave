@@ -14,6 +14,15 @@ resource "aws_instance" "app" {
     encrypted             = true
   }
 
+  # IMDSv2 required -- closes the token-less metadata SSRF pivot (AWS-0028).
+  # bootstrap.sh's metadata calls are updated to fetch a token first; if you
+  # add any NEW curl to 169.254.169.254 later, it needs the same token flow
+  # or it will silently fail once this is enabled.
+  metadata_options {
+    http_tokens   = "required"
+    http_endpoint = "enabled"
+  }
+
   user_data = base64encode(templatefile("${path.module}/userdata/bootstrap.sh", {
     domain_name        = var.domain_name
     dockerhub_username = var.dockerhub_username

@@ -24,7 +24,12 @@ resource "aws_security_group" "ec2" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # SSH - restrict to known IP in prod.tfvars
+  # trivy:ignore-AWS-0107 -- var.ssh_allowed_cidr's real value lives in the
+  # gitignored prod.tfvars (never committed, not present in CI's scan
+  # context), so Trivy can't evaluate it and flags the variable reference
+  # defensively. IMPLEMENTATION.md's setup steps require this be set to a
+  # specific IP, not 0.0.0.0/0 -- confirm your own prod.tfvars actually
+  # does this, this suppression trusts that convention, it doesn't enforce it.
   ingress {
     description = "SSH"
     from_port   = 22
@@ -33,7 +38,12 @@ resource "aws_security_group" "ec2" {
     cidr_blocks = [var.ssh_allowed_cidr]
   }
 
-  # All outbound (Docker Hub pulls, Let's Encrypt, No-IP updates)
+  # trivy:ignore-AWS-0104 -- EC2 genuinely needs broad outbound internet
+  # access: Docker Hub image pulls, dnf/apk package updates, Let's Encrypt's
+  # ACME servers, No-IP's update API. None of these are a fixed, small set
+  # of IPs that can be safely allowlisted without breaking on the next CDN
+  # rotation. Unlike RDS/ElastiCache's egress (removed entirely above),
+  # this one is operationally required, not copy-paste leftover.
   egress {
     description = "All outbound"
     from_port   = 0
@@ -60,13 +70,9 @@ resource "aws_security_group" "rds" {
     security_groups = [aws_security_group.ec2.id]
   }
 
-  egress {
-    description = "All outbound"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # No egress rule: RDS never initiates outbound connections in this
+  # architecture. Security groups are stateful -- response traffic to the
+  # allowed ingress query above is automatically permitted back out.
 
   tags = { Name = "penwave-rds-sg-${var.environment}" }
 }
@@ -86,13 +92,7 @@ resource "aws_security_group" "elasticache" {
     security_groups = [aws_security_group.ec2.id]
   }
 
-  egress {
-    description = "All outbound"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # No egress rule: same reasoning as the RDS security group above.
 
   tags = { Name = "penwave-cache-sg-${var.environment}" }
 }

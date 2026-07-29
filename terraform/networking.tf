@@ -14,6 +14,10 @@ resource "aws_internet_gateway" "main" {
 }
 
 # ── Public Subnet (EC2) ───────────────────────────────────
+# trivy:ignore-AWS-0164 -- this instance IS the public-facing entry point
+# (no ALB or NAT in front of it). A public IP here is the architecture, not
+# an oversight. Ingress is still locked down separately: only 80/443 open
+# broadly, SSH restricted to a single IP (see security-groups.tf).
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.public_subnet_cidr
