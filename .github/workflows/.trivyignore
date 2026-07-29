@@ -1,0 +1,30 @@
+# Belt-and-suspenders backstop for the inline `# trivy:ignore:<ID>` comments
+# already placed directly in terraform/*.tf. Plain .trivyignore format used
+# deliberately, not .trivyignore.yaml -- there's a documented, reproducible
+# GitHub issue (aquasecurity/trivy-action#348) where AVD-AWS-0132 specifically
+# does not get suppressed via the YAML variant. Using the older, simpler
+# format sidesteps that known bug entirely rather than hoping it doesn't
+# apply here too.
+#
+# Each ID's real justification lives as a comment directly above the
+# relevant resource/block in the .tf file itself -- this file exists only
+# so the suppression definitely takes effect even if inline comment
+# placement on nested ingress/egress blocks turns out not to be supported
+# the same way top-level resource block placement is.
+
+# EC2 broad egress -- Docker Hub, package updates, Let's Encrypt, No-IP.
+# See terraform/security-groups.tf for full reasoning.
+AWS-0104
+
+# SSH ingress CIDR -- Trivy can't evaluate the gitignored prod.tfvars value.
+# See terraform/security-groups.tf for full reasoning.
+AWS-0107
+
+# Public IP on the app subnet -- this instance IS the public entry point,
+# no ALB/NAT in front of it. See terraform/networking.tf for full reasoning.
+AWS-0164
+
+# S3 SSE-S3 vs SSE-KMS -- cost/complexity tradeoff, not a clear-cut
+# necessity like the others. See terraform/s3.tf for full reasoning and the
+# upgrade path if you decide this one's worth revisiting.
+AWS-0132
