@@ -28,3 +28,34 @@ AWS-0164
 # necessity like the others. See terraform/s3.tf for full reasoning and the
 # upgrade path if you decide this one's worth revisiting.
 AWS-0132
+
+# ── Image scan (Trivy, backend/frontend built images) ──────────────────
+# CVEs below are all in npm's OWN bundled CLI tooling
+# (usr/local/lib/node_modules/npm/node_modules/...), shipped inside
+# node:20-alpine by default. Cannot strip npm from the runtime image --
+# db-migrate-hook.yaml, the CI/CD deploy step, and bootstrap.sh all run
+# `npx prisma migrate deploy` against this exact image. None of these
+# packages are invoked except as part of that one trusted,
+# pipeline-controlled command -- they never process untrusted external
+# input (the tar CRITICAL is a gzip-bomb DoS relevant to extracting
+# untrusted archives, which this image never does).
+#
+# postcss (GHSA-r28c-9q8g-f849) is NOT in this list -- that one is a real,
+# reachable transitive dependency (via sanitize-html) and was actually
+# fixed via an npm override in backend/package.json instead of suppressed.
+CVE-2026-13149
+CVE-2026-14257
+CVE-2024-21538
+CVE-2025-64756
+CVE-2026-26996
+CVE-2026-27903
+CVE-2026-27904
+CVE-2026-48815
+CVE-2026-59873
+CVE-2026-23745
+CVE-2026-23950
+CVE-2026-24842
+CVE-2026-26960
+CVE-2026-29786
+CVE-2026-31802
+CVE-2026-59874
