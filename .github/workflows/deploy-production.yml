@@ -195,6 +195,8 @@ jobs:
           docker compose pull frontend backend
           docker compose up -d --no-deps frontend backend
 
+          docker compose exec -T nginx nginx -s reload
+
           sleep 10
           docker compose exec -T backend npx prisma migrate deploy
 
