@@ -35,7 +35,7 @@ WORKDIR /app
 LABEL org.opencontainers.image.title="penwave-frontend"
 LABEL org.opencontainers.image.description="Penwave Next.js frontend"
 
-RUN apk add --no-cache curl tini
+RUN apk add --no-cache openssl curl tini
 
 # Non-root user
 RUN addgroup --system --gid 1001 penwave \
