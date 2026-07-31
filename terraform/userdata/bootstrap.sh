@@ -84,6 +84,7 @@ METRICS_SECRET=$${METRICS_SECRET}
 DOCKERHUB_USERNAME=$${DOCKERHUB_USER}
 IMAGE_TAG=$${IMAGE_TAG}
 ENVEOF
+chown ec2-user:ec2-user "$APP_DIR/.env"
 chmod 600 "$APP_DIR/.env"
 # Docker Compose
 echo "[6/9] Downloading Docker Compose configuration from S3..."
@@ -131,7 +132,7 @@ mkdir -p /opt/noip
 # entire bootstrap script right here on every single deploy.
 cat > /opt/noip/update.sh << 'NOIP_EOF'
 #!/bin/bash
-CURRENT_IP=$(TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600") && curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4)
+CURRENT_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
 RESPONSE=$(curl -s -u "NOIP_USER_PLACEHOLDER:NOIP_PASS_PLACEHOLDER" "https://dynupdate.no-ip.com/nic/update?hostname=NOIP_DOMAIN_PLACEHOLDER&myip=$${CURRENT_IP}")
 echo "$(date): $RESPONSE (IP: $CURRENT_IP)" >> /var/log/noip.log
 NOIP_EOF
@@ -171,6 +172,8 @@ echo "Self-signed cert generated — Nginx will start immediately."
 # Auto-renew via cron (runs after real cert is issued)
 mkdir -p /etc/cron.d
 echo "0 3 * * * root certbot renew --webroot -w /var/www/certbot --quiet && docker exec penwave-nginx nginx -s reload" > /etc/cron.d/certbot-renew
+chown -R ec2-user:ec2-user "$APP_DIR"
+
 # Pull images and start platform
 echo "[9/9] Pulling Docker images and starting platform..."
 cd "$APP_DIR"
@@ -180,7 +183,7 @@ docker compose up -d
 # Runs detached so bootstrap completes and cloud-init finishes normally.
 # Polls every 2 minutes for up to 2 hours (60 attempts).
 # Once DNS resolves, issues a real cert via webroot through running Nginx.
-MY_IP=$(TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600") && curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4)
+MY_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
 cat > /opt/penwave/scripts/obtain-cert.sh << 'CERTSCRIPT'
 #!/bin/bash
 # DOMAIN and MY_IP are placeholders substituted below via sed, not shell
@@ -262,4 +265,3 @@ echo "Elastic IP : $MY_IP"
 echo "App        : https://$${DOMAIN}"
 echo "Grafana    : https://$${DOMAIN}/grafana/"
 echo "Logs       : /var/log/penwave-bootstrap.log"
-
