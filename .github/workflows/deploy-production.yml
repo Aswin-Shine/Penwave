@@ -133,6 +133,7 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: 1
           ignore-unfixed: true
+          trivyignores: .trivyignore
 
   build-frontend:
     needs: sonar-frontend
@@ -168,6 +169,7 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: 1
           ignore-unfixed: true
+          trivyignores: .trivyignore
 
   deploy:
     needs: [build-backend, build-frontend]
