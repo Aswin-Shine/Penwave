@@ -230,7 +230,7 @@ Incoming Request
 
 Every push to `main` runs the full delivery pipeline. Pull requests targeting `main` or `develop` run the validation pipeline (no deployment).
 
-![CI/CD Pipeline](./docs/assets/)
+![CI/CD Pipeline](./docs/assets/penwave_cicd_pipeline.png)
 
 ### Pipeline Stages
 
