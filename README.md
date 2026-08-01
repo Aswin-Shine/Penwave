@@ -1,30 +1,18 @@
-<div align="center">
+<h1> 🖋️ Penwave - Native Blogging Platform </h1>
 
 ![Project Banner](./docs/assets/penwave-banner.png)
 
-# Penwave
-
-**A production-grade, cloud-native blogging platform engineered for scale, security, and developer experience.**
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/your-org/penwave/ci.yml?label=CI&logo=github)](https://github.com/your-org/penwave/actions)
-[![Docker](https://img.shields.io/badge/Docker-multi--arch-2496ED?logo=docker)](https://hub.docker.com/r/your-org/penwave-backend)
-[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js)](https://nodejs.org)
-[![Next.js](https://img.shields.io/badge/Next.js-16.x-000000?logo=next.js)](https://nextjs.org)
-[![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?logo=terraform)](./terraform)
-[![Contributors](https://img.shields.io/github/contributors/your-org/penwave)](https://github.com/your-org/penwave/graphs/contributors)
-
-</div>
+**[Live Demo](https://penwave.ddns.net)** · **[Quick Start](#-implementation-guide)** · **[Architecture](#-system-architecture-hld)** · **[Security](#-security)**
 
 ---
 
-## Overview
+## 🧭 Overview
 
-Penwave is a full-stack blogging platform designed from first principles as a production system — not a tutorial project. It demonstrates end-to-end engineering maturity across the entire delivery lifecycle: secure API design, containerized deployments, infrastructure as code, real-time observability, and an automated CI/CD pipeline.
+Penwave is a full-stack blogging platform designed from first principles as a production system, not a tutorial project. It demonstrates end-to-end engineering maturity across the entire delivery lifecycle: secure API design, containerized deployments, infrastructure as code, real-time observability, and an automated CI/CD pipeline.
 
 **Audience:** Engineers, content creators, and developer communities who need a self-hosted, privacy-respecting alternative to Medium or Substack with full platform control.
 
-**Why it exists:** Most open-source blogging software treats DevOps, security, and scalability as afterthoughts. Penwave builds them in from day one — Argon2id password hashing, JWT refresh token rotation, Redis-backed rate limiting, structured logging shipped to Loki, and Prometheus metrics out of the box.
+**Why it exists:** Most open-source blogging software treats DevOps, security, and scalability as afterthoughts. Penwave builds them in from day one: Argon2id password hashing, JWT refresh token rotation, Redis-backed rate limiting, structured logging shipped to Loki, and Prometheus metrics out of the box.
 
 **Engineering highlights:**
 
@@ -34,27 +22,38 @@ Penwave is a full-stack blogging platform designed from first principles as a pr
 - Full observability stack: Prometheus + Grafana + Loki + Promtail
 - Automated multi-architecture Docker builds (linux/amd64, linux/arm64) with Trivy image scanning
 
+**At a glance:**
+
+| Metric | Count |
+| --- | --- |
+| Backend domain modules | 10 (auth, posts, comments, likes, bookmarks, users, notifications, search, analytics, tags) |
+| Backend source files | 43 TypeScript files |
+| Frontend source files | 59 TypeScript/TSX files |
+| Backend production dependencies | 21 |
+| Frontend production dependencies | 46 |
+| Terraform resource files | 10 |
+
 ---
 
 ## Table of Contents
 
-- [Key Features](#key-features)
-- [Technology Stack](#technology-stack)
-- [System Architecture — HLD](#system-architecture--hld)
-- [Low-Level Design — LLD](#low-level-design--lld)
-- [CI/CD Pipeline](#cicd-pipeline)
-- [Infrastructure as Code](#infrastructure-as-code)
-- [Observability & Operations](#observability--operations)
-- [Security](#security)
-- [Development Workflow](#development-workflow)
+- [Key Features](#-key-features)
+- [Technology Stack](#-technology-stack)
+- [System Architecture (HLD)](#-system-architecture-hld)
+- [Low-Level Design (LLD)](#-low-level-design-lld)
+- [CI/CD Pipeline](#-cicd-pipeline)
+- [Infrastructure as Code](#-infrastructure-as-code)
+- [Observability & Operations](#-observability--operations)
+- [Security](#-security)
+- [Development Workflow](#-development-workflow)
 - [Implementation Guide](#-implementation-guide)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
+- [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ---
 
-## Key Features
+## ✨ Key Features
 
 ### Platform
 
@@ -74,7 +73,7 @@ Penwave is a full-stack blogging platform designed from first principles as a pr
 | **Authentication**    | JWT access tokens (15 min) + refresh token rotation (7 days), single-use, theft detection |
 | **Authorization**     | Role-based access control (USER / ADMIN), owner-or-admin middleware                       |
 | **Caching**           | Redis-backed response cache with targeted invalidation, SCAN-safe key deletion            |
-| **Rate limiting**     | Redis-distributed limits — global, auth, and search tiers                                 |
+| **Rate limiting**     | Redis-distributed limits, covering global, auth, and search tiers                                 |
 | **Input validation**  | Zod schemas at every entry point; coerced types, validated DTOs                           |
 | **HTML sanitization** | Server-side content sanitization before DB write; client-side as defense-in-depth         |
 | **CI/CD**             | GitHub Actions: typecheck → lint → build → security scan → multi-arch push → deploy       |
@@ -84,7 +83,7 @@ Penwave is a full-stack blogging platform designed from first principles as a pr
 
 ---
 
-## Technology Stack
+## 🧰 Technology Stack
 
 ### Frontend
 
@@ -146,7 +145,7 @@ Penwave is a full-stack blogging platform designed from first principles as a pr
 
 ---
 
-## System Architecture — HLD
+## 🏗 System Architecture (HLD)
 
 Penwave follows a cloud-native, layered deployment model. The frontend is a Next.js standalone container served behind Nginx. The backend is a stateless Express API that communicates with PostgreSQL for persistence and Redis for caching and rate limiting. Both write structured logs to stdout; Promtail collects and ships to Loki. Prometheus scrapes the `/metrics` endpoint every 15 seconds.
 
@@ -157,9 +156,9 @@ Penwave follows a cloud-native, layered deployment model. The frontend is a Next
 ```
 Browser
   └─► Nginx (TLS termination, reverse proxy)
-        ├─► Frontend (Next.js standalone — port 3000)
+        ├─► Frontend (Next.js standalone, port 3000)
         │     └─► API calls via httpOnly cookie auth
-        └─► Backend API (Express — port 4000)
+        └─► Backend API (Express, port 4000)
               ├─► PostgreSQL (Prisma ORM)
               ├─► Redis (cache, rate limits)
               └─► /metrics ──► Prometheus ──► Grafana
@@ -179,7 +178,7 @@ Browser
 
 ---
 
-## Low-Level Design — LLD
+## 🧩 Low-Level Design (LLD)
 
 The backend is a modular monolith. Each domain (auth, posts, comments, likes, bookmarks, users, notifications, search, analytics, tags) is a self-contained module with its own clearly bounded layers.
 
@@ -189,17 +188,17 @@ The backend is a modular monolith. Each domain (auth, posts, comments, likes, bo
 
 ```
 src/
-├── config/         env.ts              — Zod-validated environment variables, fails fast
+├── config/         env.ts              : Zod-validated environment variables, fails fast
 ├── lib/            jwt, redis, prisma, logger, sanitize
 ├── middleware/     auth, errorHandler, health, metrics, rateLimiter, validate
-├── shared/errors/  AppError hierarchy  — operational vs programming error separation
+├── shared/errors/  AppError hierarchy  : operational vs programming error separation
 ├── utils/          response helpers, pagination
 └── modules/{domain}/
     ├── *.dto.ts        Zod schemas + inferred TypeScript types
-    ├── *.repository.ts Prisma queries only — no business logic
+    ├── *.repository.ts Prisma queries only, no business logic
     ├── *.service.ts    Business logic, cache management, authorization
     ├── *.controller.ts HTTP request/response mapping
-    └── *.routes.ts     Express router — middleware composition, handler binding
+    └── *.routes.ts     Express router, middleware composition and handler binding
 ```
 
 ### Request Flow
@@ -226,45 +225,42 @@ Incoming Request
 
 ---
 
-## CI/CD Pipeline
+## 🚀 CI/CD Pipeline
 
-Every push to `main` runs the full delivery pipeline. Pull requests targeting `main` or `develop` run the validation pipeline (no deployment).
+Deployment is tag-triggered, not push-triggered: pushing to `main` builds and deploys nothing on its own. Pushing a version tag (e.g. `v1.0.0`) is what starts the pipeline, keeping every production deploy a deliberate action rather than a side effect of a routine commit.
 
-![CI/CD Pipeline](./docs/assets/penwave_cicd_pipeline.png)
+![CI/CD Pipeline](./docs/assets/cicd-diagram.png)
 
 ### Pipeline Stages
 
 ```
-ci.yml (PR validation)                    deploy.yml (main branch)
-──────────────────────                    ────────────────────────
-typecheck (backend + frontend)     →      Build multi-arch Docker images
-lint                               →      Tag: sha-<7-char-commit>
-build validation                   →      Push to Docker Hub
-Trivy SARIF scan (source)          →      Trivy image scan (CRITICAL, exit 1)
-Terraform validate                 →      Sync monitoring configs to EC2
-                                   →      SSH deploy via penwave-deploy script
-                                   →      Health check: poll /health until 200
-                                   →      Create GitHub issue on failure
+security-scan
+    +-- sonar-backend  (report-only) ---- build-backend  --+
+    `-- sonar-frontend (report-only) ---- build-frontend --+-- deploy
 ```
 
 ### Stage Details
 
-| Stage                  | Tool                       | Failure Behavior                     |
-| ---------------------- | -------------------------- | ------------------------------------ |
-| Typecheck              | `tsc --noEmit`             | Blocks merge                         |
-| Lint                   | `next lint`                | Blocks merge                         |
-| Security scan (source) | Trivy SARIF                | Uploaded to GitHub Security tab      |
-| Security scan (image)  | Trivy (`exit-code: 1`)     | Blocks deployment on CRITICAL CVEs   |
-| Image build            | `docker/build-push-action` | Cached via GitHub Actions cache      |
-| Deploy                 | `appleboy/ssh-action`      | Runs `penwave-deploy` script on EC2  |
-| Health verify          | `curl /health`             | Fails deployment; logs last 50 lines |
-| Failure notify         | `actions/github-script`    | Creates labelled GitHub issue        |
+| Stage | Tools | Blocks Deploy? |
+| --- | --- | --- |
+| Secret scan | Gitleaks (full git history) | Yes |
+| Dependency audit | `npm audit --audit-level=critical` (backend + frontend) | Yes, CRITICAL only |
+| Dockerfile lint | Hadolint | Yes |
+| IaC scan | Trivy (config, CRITICAL/HIGH) | Yes |
+| Static analysis | SonarCloud | No, report-only |
+| Image build | `docker buildx`, multi-arch (linux/amd64, linux/arm64) | n/a |
+| Image scan | Trivy (image, CRITICAL/HIGH) | Yes |
+| Deploy | SSH to EC2, rolling container recreation | n/a |
+| Migration | `prisma migrate deploy`, runs before the health check | Yes, on failure |
+| Health verify | Custom health check script | Auto-rollback to the previous image tag on failure |
 
-**Dependency management:** Dependabot runs weekly for npm (backend + frontend), Docker base images, GitHub Actions, and Terraform providers.
+**Why SonarCloud is report-only:** the default quality gate requires code coverage on new code, and there's no test suite yet, so gating on that would fail every run regardless of actual code quality. A custom gate scoped to security findings exists but stays non-blocking for now.
 
----
+**Why migrations run before the health check:** the health endpoint verifies database connectivity. If a release includes a new migration and the health check ran first, it could fail simply because the schema doesn't match yet, triggering an unnecessary rollback of a working deploy.
 
-## Infrastructure as Code
+**Dependency management:** Dependabot runs weekly for GitHub Actions dependencies (`.github/dependabot.yml`).
+
+## 🏭 Infrastructure as Code
 
 All AWS infrastructure is provisioned via Terraform. Environments (`dev`, `prod`) are separated by variable files with no shared state.
 
@@ -272,13 +268,13 @@ All AWS infrastructure is provisioned via Terraform. Environments (`dev`, `prod`
 
 ### Principles
 
-**Immutable infrastructure** — server instances are replaced on deploy, never patched in place. The `penwave-deploy` script pulls the new image tag and performs a rolling container restart.
+**Immutable infrastructure**: server instances are replaced on deploy, never patched in place. The CI/CD pipeline's deploy job pulls the new image tag over SSH and performs a rolling container restart, with automatic rollback on a failed health check.
 
-**Remote state** — S3 backend with DynamoDB locking prevents concurrent state corruption across team members or CI runs.
+**Remote state**: S3 backend with native S3 locking (`use_lockfile = true`) prevents concurrent state corruption across team members or CI runs.
 
-**Environment parity** — dev and prod use the same Terraform modules with environment-specific variable overrides (instance sizes, Multi-AZ flags, backup retention).
+**Environment parity**: dev and prod use the same Terraform modules with environment-specific variable overrides (instance sizes, Multi-AZ flags, backup retention).
 
-**Secret management** — Secrets (DB credentials, JWT secrets, Docker Hub tokens) are stored in AWS Secrets Manager or GitHub Actions Secrets. No secrets are hardcoded or committed.
+**Secret management**: secrets (DB credentials, JWT secrets, Docker Hub tokens) are stored in AWS Secrets Manager or GitHub Actions Secrets. No secrets are hardcoded or committed.
 
 ### Module Structure
 
@@ -298,7 +294,7 @@ terraform/
 
 ---
 
-## Observability & Operations
+## 📊 Observability & Operations
 
 ### Logging
 
@@ -318,13 +314,13 @@ Prometheus scrapes `/metrics` every 15 seconds. Exposed metrics:
 | `http_errors_total`             | Counter   | 4xx + 5xx by route                              |
 | `nodejs_*`                      | Default   | Event loop, GC, heap via `prom-client` defaults |
 
-Route labels are normalized — UUIDs and numeric IDs are replaced with `:id` to prevent cardinality explosion.
+Route labels are normalized: UUIDs and numeric IDs are replaced with `:id` to prevent cardinality explosion.
 
 ### Health Probes
 
 | Endpoint      | Type      | Checks                                    |
 | ------------- | --------- | ----------------------------------------- |
-| `GET /health` | Liveness  | Process alive, uptime — no external calls |
+| `GET /health` | Liveness  | Process alive, uptime, no external calls |
 | `GET /ready`  | Readiness | PostgreSQL `SELECT 1` + Redis `PING`      |
 
 Split probes prevent database outages from triggering container restarts (a common Kubernetes misconfiguration).
@@ -341,29 +337,29 @@ Grafana is configured as the alert manager. Recommended alert rules (add to `mon
 
 ---
 
-## Security
+## 🔒 Security
 
 ### Authentication & Sessions
 
 - Passwords hashed with **Argon2id** (`memoryCost: 65536`, `timeCost: 3`, `parallelism: 4`)
-- JWT access tokens (15 min) delivered via **httpOnly, Secure, SameSite=Lax cookies** — never in response bodies or localStorage
-- Refresh tokens (7 days) stored in the database, **single-use with rotation** — reuse detection revokes all user sessions immediately
+- JWT access tokens (15 min) delivered via **httpOnly, Secure, SameSite=Lax cookies**, never in response bodies or localStorage
+- Refresh tokens (7 days) stored in the database, **single-use with rotation**, with reuse detection revokes all user sessions immediately
 - Concurrent 401 refresh guard prevents thundering herd from triggering false token reuse alerts
 - Timing attack mitigation on login: dummy Argon2 hash computed when user is not found
 
 ### Transport & Headers
 
 - **Helmet** enforces `default-src 'none'` CSP on the API layer
-- **Next.js CSP** via `headers()` in `next.config.ts` — separate policy for the frontend layer
-- CORS restricted to `FRONTEND_URL` — no wildcard origins
+- **Next.js CSP** via `headers()` in `next.config.ts`, a separate policy for the frontend layer
+- CORS restricted to `FRONTEND_URL`, no wildcard origins
 - `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`
 
 ### Input Security
 
-- Zod validation on every route — body, query, and path params
-- Server-side HTML sanitization before DB write — strips scripts, iframes, event handlers, `javascript:` URIs
+- Zod validation on every route: body, query, and path params
+- Server-side HTML sanitization before DB write, stripping scripts, iframes, event handlers, and `javascript:` URIs
 - Client-side DOM sanitization as defense-in-depth
-- Next.js `remotePatterns` restricted to known image hosts — no SSRF-enabling wildcards
+- Next.js `remotePatterns` restricted to known image hosts, avoiding SSRF-enabling wildcards
 
 ### Rate Limiting
 
@@ -377,17 +373,17 @@ Grafana is configured as the alert manager. Recommended alert rules (add to `mon
 
 - RBAC via `Role` enum (USER, ADMIN)
 - `authorize(...roles)` and `requireOwnerOrAdmin(getter)` middleware composable on any route
-- Soft deletes everywhere — no hard data deletion
+- Soft deletes everywhere, no hard data deletion
 
 ### Supply Chain
 
 - Dependabot weekly updates across npm, Docker, GitHub Actions, and Terraform
-- Trivy image scanning on every deployment — CRITICAL CVEs block the pipeline
+- Trivy image scanning on every deployment: CRITICAL CVEs block the pipeline
 - All dependencies pinned to exact versions
 
 ---
 
-## Development Workflow
+## 🔀 Development Workflow
 
 ### Branching Strategy
 
@@ -440,7 +436,7 @@ Detailed setup, local development, Docker usage, environment configuration, and 
 
 ```bash
 # Clone and install
-git clone https://github.com/your-org/penwave.git && cd penwave
+git clone https://github.com/Aswin-Shine/Penwave.git && cd Penwave
 
 # Start all services (backend, frontend, PostgreSQL, Redis)
 docker compose up -d
@@ -459,7 +455,7 @@ Prometheus: `http://localhost:9090`
 
 ---
 
-## Roadmap
+## 🗺 Roadmap
 
 | Priority | Item                                                                  | Status  |
 | -------- | --------------------------------------------------------------------- | ------- |
@@ -479,7 +475,17 @@ Prometheus: `http://localhost:9090`
 
 ---
 
-## License
+## 🤝 Contributing
+
+1. Branch from `develop` (features) or `main` (hotfixes). See [Development Workflow](#-development-workflow) for the full branching and PR process.
+2. Ensure `npm run type-check` and `npm run lint` pass locally before opening a PR.
+3. One approving review required; CI must pass.
+
+Bug reports and feature requests: open an issue on the repo.
+
+---
+
+## 📄 License
 
 This project is licensed under the [MIT License](./LICENSE).
 
@@ -489,5 +495,5 @@ This project is licensed under the [MIT License](./LICENSE).
 
 **Penwave** · Built with precision
 
-Maintained by [@Aswin-Shine](https://github.com/your-handle)
+Maintained by [@Aswin-Shine](https://github.com/Aswin-Shine)
 </div>
