@@ -35,9 +35,23 @@ Penwave is a full-stack blogging platform designed from first principles as a pr
 
 ---
 
+## 🌿 Branches & Deployment Phases
+
+This repo has two independently deployable phases, split across branches:
+
+| Branch | Phase | Infrastructure | Status |
+| --- | --- | --- | --- |
+| `main` | Phase 2 | EC2 + Docker Compose, RDS, ElastiCache, Nginx, Prometheus/Grafana/Loki/Promtail | **Live production** at [penwave.ddns.net](https://penwave.ddns.net), deployed via the gated CI/CD pipeline described below |
+| `kubernetes` | Phase 3 | EKS (Auto Mode), ArgoCD (GitOps), Helm charts, the same observability stack rebuilt for Kubernetes | Built as a deliberate Kubernetes platform-engineering exercise; not the live deployment |
+
+Everything in this README describes `main` (Phase 2) unless stated otherwise. Phase 3's `kubernetes` branch has its own manifests, ArgoCD app-of-apps structure, and Helm charts under `k8s/manifests/`, `argocd/`, and `helm/` on that branch, covering the same application deployed a different way: full GitOps reconciliation instead of a scripted SSH deploy, sync-wave-ordered rollout, and a `PreSync` migration hook instead of an inline migration step.
+
+---
+
 ## Table of Contents
 
 - [Key Features](#-key-features)
+- [Branches & Deployment Phases](#-branches--deployment-phases)
 - [Technology Stack](#-technology-stack)
 - [System Architecture (HLD)](#-system-architecture-hld)
 - [Low-Level Design (LLD)](#-low-level-design-lld)
@@ -465,7 +479,7 @@ Prometheus: `http://localhost:9090`
 | High     | GIN index for full-text search; cursor-based pagination               | Planned |
 | Medium   | API versioning (`/api/v1/*`)                                          | Planned |
 | Medium   | OpenAPI spec generated from Zod schemas; frontend type generation     | Planned |
-| Medium   | Kubernetes deployment manifests + Helm chart                          | Planned |
+| Medium   | Kubernetes deployment manifests + Helm chart                          | ✅ Done, see `kubernetes` branch |
 | Medium   | OpenTelemetry distributed tracing (Jaeger / AWS X-Ray)                | Planned |
 | Medium   | Redis Streams for async analytics ingestion and notification delivery | Planned |
 | Low      | Auto Scaling Group / ECS Fargate migration                            | Planned |
